@@ -1,0 +1,16 @@
+{
+  "name": "mur-sst-anomaly-map",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "observable preview",
+    "build": "observable build"
+  },
+  "dependencies": {
+    "@observablehq/framework": "^1.13.2",
+    "jszip": "^3.10.1",
+    "maplibre-gl": "^5.16.0",
+    "react": "^19.1.1",
+    "react-dom": "^19.1.1"
+  }
+}
