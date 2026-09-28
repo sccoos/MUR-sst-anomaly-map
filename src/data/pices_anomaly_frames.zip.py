@@ -14,7 +14,7 @@ from PIL import Image
 from pyproj import Transformer
 from scipy.ndimage import map_coordinates
 
-BASE_URL = "https://www.cencoos.org/images/PICES/"
+BASE_URL = "https://cencoos.org/images/PICES/anomaly_maps/"
 FILENAME_PATTERN = re.compile(r"noaxis_Anomaly_sst_(\d{8})\.png")
 WEST, SOUTH, EAST, NORTH = -129.0, 32.0, -117.0, 42.0
 
