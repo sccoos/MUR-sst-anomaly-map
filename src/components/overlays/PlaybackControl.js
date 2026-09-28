@@ -1,8 +1,5 @@
 import {createElement} from "react";
-
-function formatDate(date) {
-  return new Intl.DateTimeFormat("en-US", {month: "short", day: "numeric", year: "numeric", timeZone: "UTC"}).format(new Date(`${date}T00:00:00Z`));
-}
+import {formatDate} from "../../utils/formatDate.js";
 
 export function PlaybackControl({activeFrame, frameLoadError, frameIndex, frameCount, isPlaying, onFrameIndexChange, onTogglePlayback}) {
   return createElement("div", {className: `sst-time-control${isPlaying ? " sst-time-control--playing" : ""}`},

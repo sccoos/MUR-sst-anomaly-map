@@ -1,0 +1,48 @@
+.sst-card {
+  position: relative;
+  width: 100vw;
+  height: 100dvh;
+  overflow: hidden;
+  background: #cfe5ec;
+}
+
+.sst-card__map {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  border-radius: inherit;
+}
+
+.sst-card .maplibregl-ctrl-top-right {
+  top: 14px;
+  right: 14px;
+}
+
+.sst-card .maplibregl-ctrl-group {
+  overflow: hidden;
+  background: rgb(245 247 248 / 72%);
+  border: 1px solid rgb(255 255 255 / 52%);
+  border-radius: 999px;
+  box-shadow: 0 5px 18px rgb(0 0 0 / 18%), inset 0 1px rgb(255 255 255 / 35%);
+  backdrop-filter: blur(12px) saturate(0);
+  -webkit-backdrop-filter: blur(12px) saturate(0);
+}
+
+.sst-card .maplibregl-ctrl-group button {
+  width: 34px;
+  height: 34px;
+  background-color: transparent;
+}
+
+.sst-card .maplibregl-ctrl-group button + button {
+  border-color: rgb(30 34 37 / 14%);
+}
+
+.sst-card .maplibregl-ctrl-group button:hover {
+  background: rgb(30 34 37 / 10%);
+}
+
+.sst-card .sst-fine-zoom button {
+  color: rgb(20 25 29 / 92%);
+  font: 700 25px/1 system-ui, sans-serif;
+}

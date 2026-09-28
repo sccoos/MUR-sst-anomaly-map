@@ -1,0 +1,51 @@
+.sst-colorbar {
+  position: absolute;
+  z-index: 3;
+  top: 50%;
+  left: 20px;
+  display: grid;
+  grid-template-columns: 11px 30px;
+  grid-template-rows: 1fr;
+  column-gap: 6px;
+  height: clamp(180px, 30vh, 240px);
+  padding: 7px 8px;
+  transform: translateY(-50%);
+  color: rgb(20 25 29 / 92%);
+  background: rgb(245 247 248 / 72%);
+  border: 1px solid rgb(255 255 255 / 52%);
+  border-radius: 10px;
+  box-shadow: 0 5px 18px rgb(0 0 0 / 18%), inset 0 1px rgb(255 255 255 / 35%);
+  backdrop-filter: blur(12px) saturate(0);
+  -webkit-backdrop-filter: blur(12px) saturate(0);
+  font: 650 11px/1 system-ui, sans-serif;
+}
+
+.sst-colorbar__scale {
+  grid-column: 1;
+  min-height: 0;
+  background: linear-gradient(to top, #053061 0%, #2166ac 6%, #4393c3 12%, #92c5de 18%, #d1e5f0 24%, #f7f7f7 30%, #fddbc7 44%, #f4a582 58%, #d6604d 72%, #b2182b 86%, #67001f 100%);
+  border: 1px solid rgb(20 25 29 / 30%);
+  border-radius: 999px;
+}
+
+.sst-colorbar__ticks {
+  position: relative;
+  grid-column: 2;
+  height: 100%;
+  min-height: 0;
+  transform: translateY(-1px);
+}
+
+.sst-colorbar__ticks span {
+  position: absolute;
+  left: 0;
+  transform: translateY(-50%);
+  white-space: nowrap;
+}
+
+.sst-colorbar__ticks span:first-child { transform: none; }
+.sst-colorbar__ticks span:last-child { transform: translateY(-100%); }
+
+@media (max-width: 520px) {
+  .sst-colorbar { left: 12px; }
+}

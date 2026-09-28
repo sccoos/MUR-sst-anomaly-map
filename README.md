@@ -10,7 +10,11 @@ It discovers every `noaxis_Anomaly_sst_YYYYMMDD.png` available in the [CENCOOS a
 
 The ZIP contains a `manifest.json` and chronologically ordered frames. The page references that single archive through a literal Observable `FileAttachment`, then unpacks it in the browser. This keeps the map UI independent of the number of available dates. Map corners remain northwest `[-129, 42]`, northeast `[-117, 42]`, southeast `[-117, 32]`, southwest `[-129, 32]`.
 
-`src/data/maplibre-gl-csp-worker.js` and `src/data/maplibre-gl.css` are locally bundled MapLibre assets. Keep them alongside the site so preview and GitHub Pages never attempt to resolve a `file:///` worker URL or fetch framework styling from a CDN.
+`src/assets/maplibre/maplibre-gl-csp-worker.js` and `src/assets/maplibre/maplibre-gl.css` are locally bundled MapLibre assets. Keep them alongside the site so preview and GitHub Pages never attempt to resolve a `file:///` worker URL or fetch framework styling from a CDN.
+
+## Architecture
+
+`src/index.md` loads the Observable frame archive and mounts `SstAnomalyMap`. The map component owns MapLibre lifecycle and frame playback; `components/overlays` contains the colorbar, playback control, and reusable loading spinner. Shared display helpers live in `src/utils`, while overlay and map styles are colocated with their components and imported by `src/style.css`.
 
 ## Run and deploy
 
