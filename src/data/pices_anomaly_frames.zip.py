@@ -62,9 +62,10 @@ def reproject_to_web_mercator(png_bytes):
         )
     alpha = target[:, :, 3:4]
     target[:, :, :3] = np.divide(target[:, :, :3], alpha, out=np.zeros_like(target[:, :, :3]), where=alpha > 1e-6)
-    output = Image.fromarray(np.clip(np.round(target * 255), 0, 255).astype(np.uint8), "RGBA")
+    output_pixels = np.clip(np.round(target * 255), 0, 255).astype(np.uint8)
+    output = Image.fromarray(output_pixels, "RGBA")
     encoded = io.BytesIO()
-    output.save(encoded, format="PNG", compress_level=6)
+    output.save(encoded, format="WEBP", lossless=True, method=6)
     return encoded.getvalue(), target_width, target_height
 
 
@@ -80,10 +81,10 @@ def build_archive():
         for index, date in enumerate(dates, start=1):
             filename = f"noaxis_Anomaly_sst_{date}.png"
             print(f"[{index}/{len(dates)}] {filename}", file=sys.stderr, flush=True)
-            transformed_png, width, height = reproject_to_web_mercator(fetch_bytes(f"{BASE_URL}{filename}"))
+            transformed_webp, width, height = reproject_to_web_mercator(fetch_bytes(f"{BASE_URL}{filename}"))
             iso_date = f"{date[:4]}-{date[4:6]}-{date[6:]}"
-            frame_path = f"frames/{iso_date}.png"
-            archive.writestr(frame_path, transformed_png)
+            frame_path = f"frames/{iso_date}.webp"
+            archive.writestr(frame_path, transformed_webp)
             manifest_frames.append({"date": iso_date, "path": frame_path, "width": width, "height": height})
 
         archive.writestr("manifest.json", json.dumps({
@@ -98,5 +99,6 @@ def build_archive():
     return buffer.getvalue()
 
 
-# Observable requires the loader's stdout to contain only the attachment bytes.
-sys.stdout.buffer.write(build_archive())
+# Observable executes this loader as a script; stdout must contain only attachment bytes.
+if __name__ == "__main__":
+    sys.stdout.buffer.write(build_archive())

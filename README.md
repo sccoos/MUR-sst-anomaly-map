@@ -6,7 +6,7 @@ An Observable Framework site with a full-card MapLibre view for animating MUR se
 
 The generator is self-contained in Observable’s ZIP loader at `src/data/pices_anomaly_frames.zip.py`; `npm run dev` and `npm run build` invoke it automatically.
 
-It discovers every `noaxis_Anomaly_sst_YYYYMMDD.png` available in the [CENCOOS anomaly-map directory](https://cencoos.org/images/PICES/anomaly_maps/) and uses a PyProj/SciPy coordinate resample to reproject each from its geographic (`EPSG:4326`) pixel grid to Web Mercator (`EPSG:3857`) before writing the ZIP archive.
+It discovers every `noaxis_Anomaly_sst_YYYYMMDD.png` available in the [CENCOOS anomaly-map directory](https://cencoos.org/images/PICES/anomaly_maps/) and uses a PyProj/SciPy coordinate resample to reproject each from its geographic (`EPSG:4326`) pixel grid to Web Mercator (`EPSG:3857`). Frames are then encoded as lossless WebP before being added to the ZIP archive.
 
 The ZIP contains a `manifest.json` and chronologically ordered frames. The page references that single archive through a literal Observable `FileAttachment`, then unpacks it in the browser. This keeps the map UI independent of the number of available dates. Map corners remain northwest `[-129, 42]`, northeast `[-117, 42]`, southeast `[-117, 32]`, southwest `[-129, 32]`.
 

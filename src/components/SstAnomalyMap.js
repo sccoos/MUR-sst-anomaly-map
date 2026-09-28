@@ -9,15 +9,15 @@ import maplibregl from "maplibre-gl";
 
 const BOUNDS = [[-129, 32], [-117, 42]];
 const BASEMAP_STYLE_URL = "https://tiles.openfreemap.org/styles/positron";
-const FRAME_PATH = /^frames\/(\d{4})-?(\d{2})-?(\d{2})\.png$/;
-const COLORBAR_TICKS = [7, 5, 3, 1, 0, -1, -3];
+const FRAME_PATH = /^frames\/(\d{4})-?(\d{2})-?(\d{2})\.webp$/;
+const COLORBAR_TICKS = [7, 3, 0, -3];
 
 function formatDate(date) {
   return new Intl.DateTimeFormat("en-US", {month: "short", day: "numeric", year: "numeric", timeZone: "UTC"}).format(new Date(`${date}T00:00:00Z`));
 }
 
 function formatColorbarTick(value) {
-  return value > 0 ? `+${value}` : value < 0 ? `−${Math.abs(value)}` : "0";
+  return value > 0 ? `+${value}` : value < 0 ? `−${Math.abs(value)}` : "0°C";
 }
 
 function SstAnomalyMap({frameArchive, workerUrl}) {
@@ -47,10 +47,11 @@ function SstAnomalyMap({frameArchive, workerUrl}) {
             return !file.dir && match ? [{date: `${match[1]}-${match[2]}-${match[3]}`, file}] : [];
           })
           .sort((left, right) => left.date.localeCompare(right.date));
-        if (!frameFiles.length) throw new Error("Frame archive does not contain dated PNG frames");
+        if (!frameFiles.length) throw new Error("Frame archive does not contain dated WebP frames");
 
         const orderedFrames = await Promise.all(frameFiles.map(async ({date, file}) => {
-          const url = URL.createObjectURL(await file.async("blob"));
+          const webp = new Blob([await file.async("uint8array")], {type: "image/webp"});
+          const url = URL.createObjectURL(webp);
           frameUrls.push(url);
           return {date, url};
         }));
@@ -145,7 +146,6 @@ function SstAnomalyMap({frameArchive, workerUrl}) {
       createElement("span", {className: "sst-frame-loading__spinner", "aria-hidden": "true"})
     ),
     createElement("aside", {className: "sst-colorbar", "aria-label": "Sea-surface temperature anomaly color scale from minus 3 to plus 7 degrees Celsius, with zero shown as white"},
-      createElement("span", {className: "sst-colorbar__unit", "aria-hidden": "true"}, "°C"),
       createElement("div", {className: "sst-colorbar__scale"}),
       createElement("div", {className: "sst-colorbar__ticks", "aria-hidden": "true"},
         COLORBAR_TICKS.map((value) => createElement("span", {key: value, style: {top: `${(7 - value) * 10}%`}}, formatColorbarTick(value)))
