@@ -50,6 +50,7 @@ function SstAnomalyMap({frameArchive, workerUrl}) {
         }));
         if (cancelled) return;
         setFrames(orderedFrames);
+        setFrameIndex(orderedFrames.length - 1);
         setFrameLoadError(null);
       } catch (error) {
         if (!cancelled) setFrameLoadError(error.message ?? "Unable to load the frame archive");
