@@ -32,4 +32,5 @@ html, body { width: 100%; min-height: 100%; margin: 0 !important; max-width: non
 .sst-card .maplibregl-ctrl-group button { width: 34px; height: 34px; background-color: transparent; }
 .sst-card .maplibregl-ctrl-group button + button { border-color: rgb(30 34 37 / 14%); }
 .sst-card .maplibregl-ctrl-group button:hover { background: rgb(30 34 37 / 10%); }
+.sst-card .sst-fine-zoom button { color: rgb(20 25 29 / 92%); font: 700 25px/1 system-ui, sans-serif; }
 @media (max-width: 520px) { .sst-colorbar { left: 12px; } .sst-time-control { bottom: 15px; } }

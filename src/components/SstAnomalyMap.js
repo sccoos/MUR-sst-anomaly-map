@@ -3,6 +3,8 @@
 import {createElement, useEffect, useRef, useState} from "react";
 import {createRoot} from "react-dom/client";
 import JSZip from "jszip";
+import {Colorbar} from "./Colorbar.js";
+import {PlaybackControl} from "./PlaybackControl.js";
 // MapLibre publishes a CommonJS-compatible default export. Observable's module
 // loader preserves that default rather than promoting its properties to named exports.
 import maplibregl from "maplibre-gl";
@@ -10,14 +12,39 @@ import maplibregl from "maplibre-gl";
 const BOUNDS = [[-129, 32], [-117, 42]];
 const BASEMAP_STYLE_URL = "https://tiles.openfreemap.org/styles/positron";
 const FRAME_PATH = /^frames\/(\d{4})-?(\d{2})-?(\d{2})\.webp$/;
-const COLORBAR_TICKS = [7, 3, 0, -3];
+const ZOOM_STEP = 0.5;
+const PLAYBACK_INTERVAL_MS = 300;
 
 function formatDate(date) {
   return new Intl.DateTimeFormat("en-US", {month: "short", day: "numeric", year: "numeric", timeZone: "UTC"}).format(new Date(`${date}T00:00:00Z`));
 }
 
-function formatColorbarTick(value) {
-  return value > 0 ? `+${value}` : value < 0 ? `−${Math.abs(value)}` : "0°C";
+class FineZoomControl {
+  onAdd(map) {
+    this.map = map;
+    this.container = document.createElement("div");
+    this.container.className = "maplibregl-ctrl maplibregl-ctrl-group sst-fine-zoom";
+
+    const addButton = (symbol, label, delta) => {
+      const button = document.createElement("button");
+      button.type = "button";
+      button.textContent = symbol;
+      button.setAttribute("aria-label", label);
+      button.addEventListener("click", () => {
+        const nextZoom = Math.max(map.getMinZoom(), Math.min(map.getMaxZoom(), map.getZoom() + delta));
+        map.easeTo({zoom: nextZoom, duration: 180});
+      });
+      this.container.append(button);
+    };
+    addButton("+", "Zoom in", ZOOM_STEP);
+    addButton("−", "Zoom out", -ZOOM_STEP);
+    return this.container;
+  }
+
+  onRemove() {
+    this.container.remove();
+    this.map = undefined;
+  }
 }
 
 function SstAnomalyMap({frameArchive, workerUrl}) {
@@ -84,11 +111,12 @@ function SstAnomalyMap({frameArchive, workerUrl}) {
       container: mapContainerRef.current,
       style: BASEMAP_STYLE_URL,
       bounds: BOUNDS,
-      fitBoundsOptions: {padding: 22, maxZoom: 6.4},
+      fitBoundsOptions: {padding: 0},
+      zoomSnap: ZOOM_STEP,
       attributionControl: false
     });
     mapRef.current = map;
-    map.addControl(new maplibregl.NavigationControl({showCompass: false}), "top-right");
+    map.addControl(new FineZoomControl(), "top-right");
     map.addControl(new maplibregl.AttributionControl({compact: true}), "bottom-right");
     map.once("load", () => {
       // MapLibre can auto-expand compact attribution at wide viewport sizes.
@@ -132,12 +160,17 @@ function SstAnomalyMap({frameArchive, workerUrl}) {
 
   useEffect(() => {
     if (!isPlaying || frames.length < 2) return undefined;
-    const next = () => {
-      setFrameIndex((current) => (current + 1) % frames.length);
-      animationRef.current = window.setTimeout(next, 200);
+    let lastFrameTime = null;
+    const next = (timestamp) => {
+      if (lastFrameTime === null) lastFrameTime = timestamp;
+      if (timestamp - lastFrameTime >= PLAYBACK_INTERVAL_MS) {
+        setFrameIndex((current) => (current + 1) % frames.length);
+        lastFrameTime = timestamp;
+      }
+      animationRef.current = window.requestAnimationFrame(next);
     };
-    animationRef.current = window.setTimeout(next, 200);
-    return () => window.clearTimeout(animationRef.current);
+    animationRef.current = window.requestAnimationFrame(next);
+    return () => window.cancelAnimationFrame(animationRef.current);
   }, [frames.length, isPlaying]);
 
   return createElement("section", {className: "sst-card", "aria-label": "Sea-surface temperature anomaly map"},
@@ -145,17 +178,19 @@ function SstAnomalyMap({frameArchive, workerUrl}) {
     isLoadingFrames && createElement("div", {className: "sst-frame-loading", role: "status", "aria-label": "Loading map frames"},
       createElement("span", {className: "sst-frame-loading__spinner", "aria-hidden": "true"})
     ),
-    createElement("aside", {className: "sst-colorbar", "aria-label": "Sea-surface temperature anomaly color scale from minus 3 to plus 7 degrees Celsius, with zero shown as white"},
-      createElement("div", {className: "sst-colorbar__scale"}),
-      createElement("div", {className: "sst-colorbar__ticks", "aria-hidden": "true"},
-        COLORBAR_TICKS.map((value) => createElement("span", {key: value, style: {top: `${(7 - value) * 10}%`}}, formatColorbarTick(value)))
-      )
-    ),
-    createElement("div", {className: `sst-time-control${isPlaying ? " sst-time-control--playing" : ""}`},
-      createElement("button", {type: "button", className: "sst-play", onClick: () => setIsPlaying((playing) => !playing), disabled: frames.length < 2, "aria-label": isPlaying ? "Pause animation" : "Play animation", "aria-pressed": isPlaying}, isPlaying ? "❚❚" : "▶"),
-      createElement("span", {className: "sst-slider-date"}, activeFrame ? formatDate(activeFrame.date) : frameLoadError ? "Frame archive unavailable" : "Loading frames…"),
-      createElement("input", {className: "sst-slider", type: "range", min: 0, max: Math.max(frames.length - 1, 0), value: frameIndex, onChange: (event) => setFrameIndex(Number(event.target.value)), disabled: frames.length < 2, "aria-label": "Select map date"})
-    )
+    createElement(Colorbar),
+    createElement(PlaybackControl, {
+      activeFrame,
+      frameLoadError,
+      frameIndex,
+      frameCount: frames.length,
+      isPlaying,
+      onFrameIndexChange: (index) => {
+        setIsPlaying(false);
+        setFrameIndex(index);
+      },
+      onTogglePlayback: () => setIsPlaying((playing) => !playing)
+    })
   );
 }
 
