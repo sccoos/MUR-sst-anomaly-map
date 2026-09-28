@@ -10,9 +10,14 @@ import maplibregl from "maplibre-gl";
 const BOUNDS = [[-129, 32], [-117, 42]];
 const BASEMAP_STYLE_URL = "https://tiles.openfreemap.org/styles/positron";
 const FRAME_PATH = /^frames\/(\d{4})-?(\d{2})-?(\d{2})\.png$/;
+const COLORBAR_TICKS = [7, 5, 3, 1, 0, -1, -3];
 
 function formatDate(date) {
   return new Intl.DateTimeFormat("en-US", {month: "short", day: "numeric", year: "numeric", timeZone: "UTC"}).format(new Date(`${date}T00:00:00Z`));
+}
+
+function formatColorbarTick(value) {
+  return value > 0 ? `+${value}` : value < 0 ? `−${Math.abs(value)}` : "0";
 }
 
 function SstAnomalyMap({frameArchive, workerUrl}) {
@@ -25,6 +30,7 @@ function SstAnomalyMap({frameArchive, workerUrl}) {
   const [isPlaying, setIsPlaying] = useState(false);
   const [mapReady, setMapReady] = useState(false);
   const activeFrame = frames[frameIndex];
+  const isLoadingFrames = !activeFrame && !frameLoadError;
 
   useEffect(() => {
     let cancelled = false;
@@ -111,7 +117,13 @@ function SstAnomalyMap({frameArchive, workerUrl}) {
       if (existing) existing.updateImage({url: activeFrame.url, coordinates: [[-129, 42], [-117, 42], [-117, 32], [-129, 32]]});
       else {
         map.addSource(sourceId, {type: "image", url: activeFrame.url, coordinates: [[-129, 42], [-117, 42], [-117, 32], [-129, 32]]});
-        map.addLayer({id: layerId, type: "raster", source: sourceId, paint: {"raster-opacity": 0.82}});
+        const firstTextLayerId = map.getStyle().layers
+          ?.find((layer) => layer.type === "symbol" && layer.layout?.["text-field"])
+          ?.id;
+        map.addLayer(
+          {id: layerId, type: "raster", source: sourceId, paint: {"raster-opacity": 1}},
+          firstTextLayerId
+        );
       }
     };
     updateFrame();
@@ -121,27 +133,28 @@ function SstAnomalyMap({frameArchive, workerUrl}) {
     if (!isPlaying || frames.length < 2) return undefined;
     const next = () => {
       setFrameIndex((current) => (current + 1) % frames.length);
-      animationRef.current = window.setTimeout(next, 350);
+      animationRef.current = window.setTimeout(next, 200);
     };
-    animationRef.current = window.setTimeout(next, 350);
+    animationRef.current = window.setTimeout(next, 200);
     return () => window.clearTimeout(animationRef.current);
   }, [frames.length, isPlaying]);
 
   return createElement("section", {className: "sst-card", "aria-label": "Sea-surface temperature anomaly map"},
     createElement("div", {ref: mapContainerRef, className: "sst-card__map", role: "img", "aria-label": activeFrame ? `Sea-surface temperature anomaly map for ${formatDate(activeFrame.date)}` : "Sea-surface temperature anomaly map"}),
-    createElement("aside", {className: "sst-colorbar", "aria-label": "Sea-surface temperature anomaly color scale from minus 3 to plus 3 degrees Celsius"},
-      createElement("span", {className: "sst-colorbar__unit"}, "°C"),
+    isLoadingFrames && createElement("div", {className: "sst-frame-loading", role: "status", "aria-label": "Loading map frames"},
+      createElement("span", {className: "sst-frame-loading__spinner", "aria-hidden": "true"})
+    ),
+    createElement("aside", {className: "sst-colorbar", "aria-label": "Sea-surface temperature anomaly color scale from minus 3 to plus 7 degrees Celsius, with zero shown as white"},
+      createElement("span", {className: "sst-colorbar__unit", "aria-hidden": "true"}, "°C"),
       createElement("div", {className: "sst-colorbar__scale"}),
       createElement("div", {className: "sst-colorbar__ticks", "aria-hidden": "true"},
-        ["+3", "+2", "+1", "0", "−1", "−2", "−3"].map((label) => createElement("span", {key: label}, label))
+        COLORBAR_TICKS.map((value) => createElement("span", {key: value, style: {top: `${(7 - value) * 10}%`}}, formatColorbarTick(value)))
       )
     ),
-    createElement("div", {className: "sst-time-control"},
+    createElement("div", {className: `sst-time-control${isPlaying ? " sst-time-control--playing" : ""}`},
       createElement("button", {type: "button", className: "sst-play", onClick: () => setIsPlaying((playing) => !playing), disabled: frames.length < 2, "aria-label": isPlaying ? "Pause animation" : "Play animation", "aria-pressed": isPlaying}, isPlaying ? "❚❚" : "▶"),
-      createElement("label", {className: "sst-slider-label"},
-        createElement("span", null, activeFrame ? formatDate(activeFrame.date) : frameLoadError ? "Frame archive unavailable" : "Loading frames…"),
-        createElement("input", {type: "range", min: 0, max: Math.max(frames.length - 1, 0), value: frameIndex, onChange: (event) => setFrameIndex(Number(event.target.value)), disabled: frames.length < 2, "aria-label": "Select map date"})
-      )
+      createElement("span", {className: "sst-slider-date"}, activeFrame ? formatDate(activeFrame.date) : frameLoadError ? "Frame archive unavailable" : "Loading frames…"),
+      createElement("input", {className: "sst-slider", type: "range", min: 0, max: Math.max(frames.length - 1, 0), value: frameIndex, onChange: (event) => setFrameIndex(Number(event.target.value)), disabled: frames.length < 2, "aria-label": "Select map date"})
     )
   );
 }
