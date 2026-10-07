@@ -13,6 +13,22 @@ import {BASEMAP_STYLE_URL, FRAME_PATH, MAP_BOUNDS, MAP_IMAGE_COORDINATES, PLAYBA
 // loader preserves that default rather than promoting its properties to named exports.
 import maplibregl from "maplibre-gl";
 
+function fitRasterVertically(map) {
+  // Start by centering the raster bounds, then increase the zoom just enough
+  // for its north and south edges to meet the map's top and bottom edges.
+  // fitBounds alone can leave vertical space on a narrow viewport because it
+  // must keep the entire raster width visible as well.
+  map.fitBounds(MAP_BOUNDS, {padding: 0, duration: 0});
+  const south = map.project(MAP_BOUNDS[0]);
+  const north = map.project(MAP_BOUNDS[1]);
+  const rasterHeight = Math.abs(south.y - north.y);
+  const mapHeight = map.getContainer().clientHeight;
+
+  if (rasterHeight > 0 && mapHeight > 0) {
+    map.zoomTo(map.getZoom() + Math.log2(mapHeight / rasterHeight), {duration: 0});
+  }
+}
+
 function SstAnomalyMap({frameArchive, workerUrl}) {
   const mapContainerRef = useRef(null);
   const mapRef = useRef(null);
@@ -86,6 +102,7 @@ function SstAnomalyMap({frameArchive, workerUrl}) {
     map.addControl(new FineZoomControl(), "top-right");
     map.addControl(new maplibregl.AttributionControl({compact: true}), "bottom-right");
     map.once("load", () => {
+      fitRasterVertically(map);
       // MapLibre can auto-expand compact attribution at wide viewport sizes.
       // Start as the info button; the user can still expand it on demand.
       map.getContainer()
